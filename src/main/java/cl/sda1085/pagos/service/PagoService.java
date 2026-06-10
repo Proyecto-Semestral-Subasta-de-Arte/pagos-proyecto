@@ -1,5 +1,6 @@
 package cl.sda1085.pagos.service;
 
+import cl.sda1085.pagos.controller.PagoController;
 import cl.sda1085.pagos.dto.PagoRequestDTO;
 import cl.sda1085.pagos.dto.PagoResponseDTO;
 import cl.sda1085.pagos.exception.PagoDuplicadoException;
@@ -16,6 +17,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -26,7 +30,7 @@ public class PagoService {
 
     //Método de apoyo para encapsulamiento de datos
     private PagoResponseDTO mapToResponseDTO(Pago pago){
-        return PagoResponseDTO.builder()
+        PagoResponseDTO dto = PagoResponseDTO.builder()
                 .id(pago.getId())
                 .idSubasta(pago.getIdSubasta())
                 .idUsuario(pago.getIdUsuario())
@@ -34,6 +38,16 @@ public class PagoService {
                 .estado(pago.getEstado())
                 .metodo(pago.getMetodo())
                 .build();
+        // Enlace al propio recurso (Self Link)
+        dto.add(linkTo(methodOn(PagoController.class).obtenerPorId(pago.getId())).withSelfRel());
+
+        // Enlace relacional hacia la colección completa de pagos
+        dto.add(linkTo(methodOn(PagoController.class).obtenerTodos()).withRel("lista-pagos"));
+
+        // Enlace transicional para actualizar el estado de este pago específico de forma dinámica
+        dto.add(linkTo(methodOn(PagoController.class).actualizarEstado(pago.getId(), null)).withRel("cambiar-estado"));
+
+        return dto;
     }
 
 
